@@ -49,7 +49,11 @@
     "libsDir": "packages"
   },
   "release": {
-    "projects": ["ability-native-send", "policy-counter", "test-e2e"],
+    "projects": [
+      "cornerstone-lp-rebalancer-ability",
+      "cornerstone-lp-rebalancer-policy",
+      "cornerstone-lp-rebalancer-e2e"
+    ],
     "projectsRelationship": "independent",
     "releaseTagPattern": "vincent/{projectName}/{version}",
     "versionPlans": true,

@@ -1,12 +1,11 @@
 import { access, writeFile } from 'fs/promises';
 import { join } from 'path';
 
+// eslint-disable-next-line @nx/enforce-module-boundaries
+import { funder } from '@reubenr0d/lp-rebalancer-e2e';
 // eslint-disable-next-line import-x/no-named-as-default
 import Table from 'cli-table3';
 import { stringify } from 'envfile';
-
-// eslint-disable-next-line @nx/enforce-module-boundaries
-import { funder } from '@lit-protocol/vincent-example-e2e';
 
 import { getPrivateKeysEnv } from './env';
 import { getFunderAccount } from './prompts/get-funder-account';
@@ -27,12 +26,17 @@ async function fileExists(filePath: string) {
  * Guides user through funding, captures funder key, generates env vars, checks balance, prints table, writes .env.test-e2e
  */
 export async function setupFunderEnv(repoRoot: string): Promise<void> {
-  const envTestE2EPath = join(repoRoot, 'packages', 'test-e2e', '.env.test-e2e');
+  const envTestE2EPath = join(
+    repoRoot,
+    'packages',
+    'cornerstone-lp-rebalancer-e2e',
+    '.env.test-e2e',
+  );
 
-  // We should only set up a new funder if there isn't already defined packages/test-e2e/.env.test-e2e
+  // We should only set up a new funder if there isn't already defined packages/cornerstone-lp-rebalancer-e2e/.env.test-e2e
   if (await fileExists(envTestE2EPath)) {
     throw new Error(
-      'An env file already exists at packages/test-e2e/.env.test-e2e. Please remove or rename it before running bootstrap again.',
+      'An env file already exists at packages/cornerstone-lp-rebalancer-e2e/.env.test-e2e. Please remove or rename it before running bootstrap again.',
     );
   }
 

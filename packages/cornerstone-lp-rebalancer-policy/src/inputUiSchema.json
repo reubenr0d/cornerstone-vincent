@@ -1,0 +1,32 @@
+{
+  "jsonSchema": {
+    "type": "object",
+    "properties": {
+      "maxSends": {
+        "type": "number",
+        "title": "Maximum sends in window",
+        "description": "Maximum number of sends allowed within the configured time window.",
+        "minimum": 1
+      },
+      "timeWindowSeconds": {
+        "type": "number",
+        "title": "Time window (seconds)",
+        "description": "Length of the counting window in seconds (e.g., 10 = 10 seconds).",
+        "minimum": 1
+      }
+    },
+    "required": ["maxSends", "timeWindowSeconds"]
+  },
+  "uiSchema": {
+    "maxSends": {
+      "ui:widget": "number",
+      "ui:placeholder": "5",
+      "ui:help": "Enter a positive integer for how many sends are allowed in the window."
+    },
+    "timeWindowSeconds": {
+      "ui:widget": "number",
+      "ui:placeholder": "60",
+      "ui:help": "Enter a positive number of seconds for the counting window."
+    }
+  }
+}

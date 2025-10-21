@@ -3,13 +3,13 @@
   "compileOnSave": false,
   "references": [
     {
-      "path": "./packages/policy-counter"
+      "path": "./packages/cornerstone-lp-rebalancer-policy"
     },
     {
-      "path": "./packages/ability-native-send"
+      "path": "./packages/cornerstone-lp-rebalancer-ability"
     },
     {
-      "path": "./packages/test-e2e"
+      "path": "./packages/cornerstone-lp-rebalancer-e2e"
     }
   ]
 }

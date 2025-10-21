@@ -34,9 +34,9 @@ importers:
       '@eslint/js':
         specifier: 9.25.1
         version: 9.25.1
-      '@lit-protocol/vincent-example-e2e':
+      '@reubenr0d/lp-rebalancer-e2e':
         specifier: workspace:*
-        version: link:packages/test-e2e
+        version: link:packages/cornerstone-lp-rebalancer-e2e
       '@nx/eslint':
         specifier: 21.2.1
         version: 21.2.1(@babel/traverse@7.28.3)(@swc-node/register@1.9.1(@swc/core@1.5.7(@swc/helpers@0.5.11))(@swc/types@0.1.24)(typescript@5.8.3))(@swc/core@1.5.7(@swc/helpers@0.5.11))(@zkochan/js-yaml@0.0.7)(eslint@9.22.0)(nx@21.2.1(@swc-node/register@1.9.1(@swc/core@1.5.7(@swc/helpers@0.5.11))(@swc/types@0.1.24)(typescript@5.8.3))(@swc/core@1.5.7(@swc/helpers@0.5.11)))
@@ -143,7 +143,7 @@ importers:
         specifier: 8.29.0
         version: 8.29.0(eslint@9.22.0)(typescript@5.8.3)
 
-  packages/ability-native-send:
+  packages/cornerstone-lp-rebalancer-ability:
     dependencies:
       '@lit-protocol/vincent-ability-sdk':
         specifier: ^2.0.0
@@ -151,9 +151,9 @@ importers:
       '@lit-protocol/vincent-app-sdk':
         specifier: ^2.0.0
         version: 2.0.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
-      '@lit-protocol/vincent-example-policy-counter':
+      '@reubenr0d/lp-rebalancer-policy':
         specifier: workspace:*
-        version: link:../policy-counter
+        version: link:../cornerstone-lp-rebalancer-policy
       '@lit-protocol/vincent-scaffold-sdk':
         specifier: ^2.0.0
         version: 2.0.0(@lit-protocol/vincent-ability-sdk@2.0.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(@types/node@20.19.11)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -177,7 +177,7 @@ importers:
         specifier: 4.0.0
         version: 4.0.0
 
-  packages/policy-counter:
+  packages/cornerstone-lp-rebalancer-policy:
     dependencies:
       '@lit-protocol/vincent-ability-sdk':
         specifier: ^2.0.0
@@ -208,7 +208,7 @@ importers:
         specifier: 4.0.0
         version: 4.0.0
 
-  packages/test-e2e:
+  packages/cornerstone-lp-rebalancer-e2e:
     dependencies:
       '@dotenvx/dotenvx':
         specifier: 1.44.2
@@ -225,12 +225,12 @@ importers:
       '@lit-protocol/vincent-contracts-sdk':
         specifier: ^1.0.1
         version: 1.0.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      '@lit-protocol/vincent-example-ability-native-send':
+      '@reubenr0d/lp-rebalancer-ability':
         specifier: workspace:*
-        version: link:../ability-native-send
-      '@lit-protocol/vincent-example-policy-counter':
+        version: link:../cornerstone-lp-rebalancer-ability
+      '@reubenr0d/lp-rebalancer-policy':
         specifier: workspace:*
-        version: link:../policy-counter
+        version: link:../cornerstone-lp-rebalancer-policy
       '@t3-oss/env-core':
         specifier: 0.13.8
         version: 0.13.8(typescript@5.8.3)(zod@3.25.76)

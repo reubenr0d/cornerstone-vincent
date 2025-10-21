@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": "src",
+    "outDir": "dist",
+    "emitDeclarationOnly": false,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "types": ["node"],
+    "moduleResolution": "nodenext",
+    "module": "nodenext",
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.json"],
+  "exclude": [
+    "out-tsc",
+    "dist",
+    "jest.config.js",
+    "src/**/*.spec.ts",
+    "src/**/*.test.ts",
+    "eslint.config.js",
+    "eslint.config.cjs",
+    "eslint.config.mjs"
+  ],
+  "references": [
+    {
+      "path": "../cornerstone-lp-rebalancer-policy/tsconfig.lib.json"
+    },
+    {
+      "path": "../cornerstone-lp-rebalancer-ability/tsconfig.lib.json"
+    }
+  ]
+}
