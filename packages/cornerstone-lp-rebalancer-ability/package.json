@@ -1,6 +1,6 @@
 {
   "name": "@reubenr0d/lp-rebalancer-ability",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "LP Rebalancer Vincent ability.",
   "main": "./dist/src/index.js",
   "module": "./dist/src/index.js",
