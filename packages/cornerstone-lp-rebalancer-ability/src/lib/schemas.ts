@@ -47,7 +47,6 @@ export const precheckSuccessSchema = z.object({
   registryAddress: ethereumAddressSchema,
   projectCount: z.number(),
   trackedPositions: z.number(),
-  backfilledPositions: z.number(),
   projects: z.array(projectReportSchema),
 });
 
@@ -66,7 +65,6 @@ export const precheckFailSchema = z.object({
 export const executeSuccessSchema = z.object({
   registryAddress: ethereumAddressSchema,
   totalActions: z.number(),
-  backfilledPositions: z.number(),
   projects: z.array(projectReportSchema.extend({ actions: z.array(actionSchema).default([]) })),
 });
 

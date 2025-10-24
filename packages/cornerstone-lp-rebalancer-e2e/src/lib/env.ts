@@ -29,11 +29,23 @@ export const getEnv = () => {
         TEST_APP_MANAGER_PRIVATE_KEY: z.string(),
         TEST_APP_DELEGATEE_PRIVATE_KEY: z.string(),
         TEST_AGENT_WALLET_PKP_OWNER_PRIVATE_KEY: z.string(),
+        // Optional: Use a specific pre-configured PKP instead of auto-discovering/minting
+        TEST_PKP_TOKEN_ID: z.string().optional(),
+        TEST_PKP_ETH_ADDRESS: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address')
+          .optional(),
         YELLOWSTONE_RPC_URL: z
           .string()
           .optional()
           .default('https://yellowstone-rpc.litprotocol.com/'),
         BASE_RPC_URL: z.string().optional().default('https://base.llamarpc.com'),
+        TEST_REGISTRY_ADDRESS: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address')
+          .optional(),
+        DEPLOYED_ABILITY_IPFS_CID: z.string().optional(),
+        DEPLOYED_POLICY_IPFS_CID: z.string().optional(),
       },
     });
   } catch (e) {

@@ -1,12 +1,65 @@
 import type { PkpInfo } from '../mint-new-pkp';
 
 import { getChainHelpers } from '../chain';
+import { getEnv } from '../env';
 import { ensureWalletHasTestTokens } from '../funder/ensure-wallet-has-test-tokens';
 import { getLitContractsClient } from '../litContractsClient/getLitContractsClient';
 import { mintNewPkp } from '../mint-new-pkp';
 
 // Get an existing, or mint a new one if there is no existing, agent PKP using the agent wallet owner's address
 export const ensureAgentPkpExists = async (): Promise<PkpInfo> => {
+  const env = getEnv();
+
+  // If specific PKP is configured in environment, validate and use that
+  if (env.TEST_PKP_TOKEN_ID && env.TEST_PKP_ETH_ADDRESS) {
+    console.log(
+      `Validating configured PKP from environment: ethAddress: ${env.TEST_PKP_ETH_ADDRESS}, tokenId: ${env.TEST_PKP_TOKEN_ID}`,
+    );
+
+    const {
+      wallets: { agentWalletOwner },
+    } = await getChainHelpers();
+
+    // Validate that this PKP exists by checking if the owner has it
+    const litContractClient = await getLitContractsClient({ wallet: agentWalletOwner });
+
+    try {
+      // Try to get PKP info to verify it exists
+      const ownedPkps = await litContractClient.pkpNftContractUtils.read.getTokensInfoByAddress(
+        agentWalletOwner.address,
+      );
+
+      // Check if the configured PKP is owned by this wallet
+      const configuredPkp = ownedPkps.find(
+        (pkp) =>
+          pkp.tokenId.toString() === env.TEST_PKP_TOKEN_ID ||
+          pkp.ethAddress.toLowerCase() === env.TEST_PKP_ETH_ADDRESS?.toLowerCase(),
+      );
+
+      if (configuredPkp) {
+        console.log(
+          `✅ Validated: PKP is owned by agent wallet owner (${agentWalletOwner.address})`,
+        );
+        return {
+          tokenId: configuredPkp.tokenId.toString(),
+          ethAddress: configuredPkp.ethAddress,
+        };
+      } else {
+        console.warn(
+          `⚠️  Warning: Configured PKP (${env.TEST_PKP_ETH_ADDRESS}) is not owned by agent wallet owner (${agentWalletOwner.address}).`,
+        );
+        console.warn(`   Permissions may fail. Falling back to auto-discovery...`);
+        // Fall through to auto-discovery below
+      }
+    } catch (error) {
+      console.warn(
+        `⚠️  Failed to validate configured PKP: ${error instanceof Error ? error.message : error}`,
+      );
+      console.warn(`   Falling back to auto-discovery...`);
+      // Fall through to auto-discovery below
+    }
+  }
+
   const {
     wallets: { agentWalletOwner },
   } = await getChainHelpers();

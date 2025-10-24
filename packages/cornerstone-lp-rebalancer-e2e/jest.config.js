@@ -8,4 +8,10 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts'],
   setupFilesAfterEnv: ['./jest.setup.js'],
   detectOpenHandles: true,
+  // Enable console output
+  verbose: true,
+  silent: false,
+  // Don't suppress console logs
+  clearMocks: false,
+  restoreMocks: false,
 };

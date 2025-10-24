@@ -2,9 +2,9 @@
 
 A complete example repository for Vincent Ability and Policy authors. This monorepo uses Nx and pnpm and includes:
 
-- An example Vincent Ability that sends native tokens
-- An example Vincent Policy that counts ability executions
-- End-to-end tests that automatically build, deploy, and exercise the example ability and policy
+- A Vincent Ability that monitors Cornerstone projects and rebalances Uniswap V3 LP positions
+- A Vincent Policy that rate-limits ability executions
+- End-to-end tests that automatically build, deploy, and exercise the ability and policy
 
 ### See detailed documentation / guides at [docs.heyvincent.ai](https://docs.heyvincent.ai)
 
@@ -115,7 +115,16 @@ It is recommended to use Corepack to ensure pnpm is used for the repository's pa
    ```bash
    pnpm bootstrap
    ```
-4. Run the example end-to-end test flow:
+4. (Optional) Configure a test registry address:
+
+   ```bash
+   # In packages/cornerstone-lp-rebalancer-e2e/.env.test-e2e
+   TEST_REGISTRY_ADDRESS=0xYourCornerstoneRegistryAddress
+   ```
+
+   If not configured, the test will use a placeholder address. For full end-to-end testing with real data, deploy a Cornerstone registry contract and configure this address.
+
+5. Run the example end-to-end test flow:
    ```bash
    pnpm test-e2e
    ```

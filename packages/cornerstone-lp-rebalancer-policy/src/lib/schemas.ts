@@ -4,10 +4,16 @@ import { z } from 'zod';
  * Ability parameters schema - matches the ability this policy works with
  */
 export const abilityParamsSchema = z.object({
-  to: z
+  registryAddress: z
     .string()
-    .min(1, 'Recipient address cannot be empty')
-    .describe("The recipient's address the underlying ability will send to."),
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address')
+    .describe('The Cornerstone registry contract address to monitor for projects.'),
+  rpcUrl: z
+    .string()
+    .url('Invalid RPC URL format')
+    .optional()
+    .default('https://yellowstone-rpc.litprotocol.com/')
+    .describe('The RPC URL to use for querying blockchain data.'),
 });
 
 /**
