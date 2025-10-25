@@ -15,7 +15,9 @@
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-import { bundledVincentAbility as rebalancerAbility } from '@reubenr0d/lp-rebalancer-ability';
+// Import directly from source since tsx can handle TypeScript
+// This avoids needing to compile the ability package
+import { bundledVincentAbility as rebalancerAbility } from "@reubenr0d/lp-rebalancer-ability/src/index";
 import { ethers } from 'ethers';
 
 import {
