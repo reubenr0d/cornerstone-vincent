@@ -43,9 +43,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build packages
-        continue-on-error: true
-        run: pnpm build
+      # Build step skipped - tsx runs TypeScript directly without needing compiled files
+      # - name: Build packages
+      #   continue-on-error: true
+      #   run: pnpm build
 
       - name: Verify required files
         run: |
