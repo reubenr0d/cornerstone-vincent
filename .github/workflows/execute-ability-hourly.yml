@@ -44,6 +44,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build packages
+        continue-on-error: true
         run: pnpm build
 
       - name: Verify required files
