@@ -1,0 +1,6 @@
+{
+  "sig": "0x81020319ec89108c9d8ae62216972c33032f6e43e9116f3f51865187de549e952cf3f105598b085449eb8d0be3be12fcf7eed2ac36ad8f1a81a7033a7f8229781b",
+  "derivedVia": "web3.eth.personal.sign",
+  "signedMessage": "localhost wants you to sign in with your Ethereum account:\n0xa7E3aE4df9655749E2a366E30b83a1B3374c8267\n\nThis is a test statement.  You can put anything you want here. I further authorize the stated URI to perform the following actions on my behalf: (1) 'Auth': 'Auth' for 'lit-ratelimitincrease://312985'.\n\nURI: lit:capability:delegation\nVersion: 1\nChain ID: 1\nNonce: 0xd1ce94c4fcdcfeff280b11045e34ffc17291325cde86c9aacdea0595f6487d3c\nIssued At: 2025-10-25T07:55:56.020Z\nExpiration Time: 2025-11-01T07:55:56.017Z\nResources:\n- urn:recap:eyJhdHQiOnsibGl0LXJhdGVsaW1pdGluY3JlYXNlOi8vMzEyOTg1Ijp7IkF1dGgvQXV0aCI6W3siZGVsZWdhdGVfdG8iOlsiYUIwRDU5MjJBRUI0N2Q2RTAyOEU0NmE2Njc1MkYwNTRkNjM5YkFlYiJdLCJuZnRfaWQiOlsiMzEyOTg1Il0sInVzZXMiOiIxMDAifV19fSwicHJmIjpbXX0",
+  "address": "0xa7E3aE4df9655749E2a366E30b83a1B3374c8267"
+}

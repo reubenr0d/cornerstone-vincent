@@ -25,7 +25,5 @@
     "@lit-protocol/esbuild-plugin-polyfill-node": "^0.3.0",
     "ipfs-only-hash": "4.0.0"
   },
-  "peerDependencies": {
-    "@lit-protocol/vincent-app-sdk": "^2.0.0"
-  }
+  "peerDependencies": {}
 }

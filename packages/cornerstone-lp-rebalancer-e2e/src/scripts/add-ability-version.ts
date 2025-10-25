@@ -1,26 +1,16 @@
 #!/usr/bin/env tsx
 /**
- * Programmatic PKP Setup Script (Following Vincent Pattern)
+ * Add New Ability Version to Existing App
  *
- * This script follows the proper Vincent pattern for setting up PKP and permissions:
- * 1. Ensure agent PKP exists (or mint a new one)
- * 2. Add Lit Protocol permissions for the ability
- * 3. Register a new app with the ability (and optional policies)
- * 4. Permit the PKP to use the app version
+ * This script adds a new version with the updated ability to an existing app.
+ * Use this when you've updated your ability and want to deploy it to an existing app.
  *
  * Usage:
- *   pnpm setup-pkp-programmatic
+ *   DEPLOYED_ABILITY_IPFS_CID=QmW2piwDaAY7bky94zufG11hZ5jZLJTwWjPwR74Vv2Cs6p pnpm add-ability-version
  *
  * Required Environment Variables (in .env.test-e2e):
- *   - TEST_FUNDER_PRIVATE_KEY: Private key for funding wallets
- *   - TEST_APP_MANAGER_PRIVATE_KEY: Private key for app manager (registers apps)
- *   - TEST_APP_DELEGATEE_PRIVATE_KEY: Private key for app delegatee
- *   - TEST_AGENT_WALLET_PKP_OWNER_PRIVATE_KEY: Private key for PKP owner
- *
- * Optional Environment Variables:
- *   - TEST_PKP_TOKEN_ID: Use specific PKP instead of auto-discovery/minting
- *   - TEST_PKP_ETH_ADDRESS: Use specific PKP address
- *   - DEPLOYED_ABILITY_IPFS_CID: Use specific ability IPFS CID
+ *   - TEST_APP_MANAGER_PRIVATE_KEY: Private key for app manager
+ *   - DEPLOYED_ABILITY_IPFS_CID: New ability IPFS CID
  */
 
 import { writeFileSync } from 'fs';
@@ -33,10 +23,9 @@ import type { PermissionData } from '@lit-protocol/vincent-contracts-sdk';
 
 import { getClient } from '@lit-protocol/vincent-contracts-sdk';
 
-import { registerNewApp } from '../lib/appManager/register-new-app';
+import { addAppVersion } from '../lib/appManager/add-app-version';
 import { getChainHelpers } from '../lib/chain';
 import { addPermissionForAbilities } from '../lib/delegator/add-permission-for-abilities';
-// Import helper functions
 import { ensureFundedAgentPkpExists } from '../lib/delegator/agent-pkp';
 import { permitAppVersionForAgentWalletPkp } from '../lib/delegator/permit-vincent-app-version';
 import { getEnv } from '../lib/env';
@@ -55,7 +44,7 @@ interface SetupResult {
 }
 
 async function main() {
-  console.log('\n🚀 ===== PROGRAMMATIC PKP SETUP (Vincent Pattern) =====\n');
+  console.log('\n🔄 ===== ADD NEW ABILITY VERSION TO EXISTING APP =====\n');
 
   // Load environment variables from .env.test-e2e
   const envPath = resolve(__dirname, '../../.env.test-e2e');
@@ -67,11 +56,7 @@ async function main() {
     getEnv();
   } catch (error) {
     console.error('❌ Environment validation failed!');
-    console.error('   Make sure all required variables are set in .env.test-e2e:');
-    console.error('   - TEST_FUNDER_PRIVATE_KEY');
-    console.error('   - TEST_APP_MANAGER_PRIVATE_KEY');
-    console.error('   - TEST_APP_DELEGATEE_PRIVATE_KEY');
-    console.error('   - TEST_AGENT_WALLET_PKP_OWNER_PRIVATE_KEY\n');
+    console.error('   Make sure all required variables are set in .env.test-e2e');
     throw error;
   }
 
@@ -85,16 +70,16 @@ async function main() {
   console.log(`   App Delegatee: ${appDelegatee.address}`);
   console.log('');
 
-  // Step 1: Ensure agent PKP exists (will mint new one if needed)
-  console.log('🪙 Step 1: Setting up Agent PKP...');
+  // Step 1: Get PKP info
+  console.log('🪙 Step 1: Getting Agent PKP...');
   const pkpInfo = await ensureFundedAgentPkpExists();
   console.log(`✅ Agent PKP ready:`);
   console.log(`   PKP Address: ${pkpInfo.ethAddress}`);
   console.log(`   PKP Token ID: ${pkpInfo.tokenId}`);
   console.log('');
 
-  // Step 2: Add Lit Protocol permissions for the ability
-  console.log('🔐 Step 2: Adding Lit Protocol permissions for ability...');
+  // Step 2: Get new ability IPFS CID
+  console.log('📦 Step 2: Getting ability IPFS CID...');
   const abilityIpfsCid = process.env.DEPLOYED_ABILITY_IPFS_CID || rebalancerAbility.ipfsCid || '';
 
   if (!abilityIpfsCid) {
@@ -104,36 +89,48 @@ async function main() {
   }
 
   console.log(`   Using ability IPFS CID: ${abilityIpfsCid}`);
+  console.log('');
 
+  // Step 3: Add Lit Protocol permissions for the new ability
+  console.log('🔐 Step 3: Adding Lit Protocol permissions for new ability...');
   await addPermissionForAbilities(agentWalletOwner, pkpInfo.tokenId, [abilityIpfsCid]);
   console.log('✅ Lit Protocol permissions added successfully');
   console.log('');
 
-  // Step 3: Register new app or use existing app
-  console.log('🏗️  Step 3: Setting up app with ability...');
-
-  // Check if delegatee already has an app registered
+  // Step 4: Get existing app
+  console.log('🔍 Step 4: Finding existing app...');
   const vincentClient = getClient({ signer: appManager });
-  await vincentClient.getAppByDelegateeAddress({
+  const existingApp = await vincentClient.getAppByDelegateeAddress({
     delegateeAddress: appDelegatee.address,
   });
 
-  // Always register a new app for the updated ability
-  // Note: Vincent SDK doesn't support adding versions to existing apps easily
-  console.log('   Registering new app with updated ability...');
-  const result = await registerNewApp({
+  if (!existingApp || !existingApp.appId) {
+    throw new Error(
+      `No app found for delegatee ${appDelegatee.address}. Please run setup-pkp-programmatic first.`,
+    );
+  }
+
+  const appId =
+    typeof existingApp.appId === 'object' && 'toNumber' in existingApp.appId
+      ? (existingApp.appId as { toNumber(): number }).toNumber()
+      : existingApp.appId;
+
+  console.log(`✅ Found existing app: ID ${appId}`);
+  console.log('');
+
+  // Step 5: Add new version to existing app
+  console.log('🏗️  Step 5: Adding new version to app...');
+  const { appVersion } = await addAppVersion({
+    appId,
     abilityIpfsCids: [abilityIpfsCid],
     abilityPolicies: [[]],
   });
-  const appId = result.appId;
-  const appVersion = result.appVersion;
-  console.log(`   ✅ App registered: ID ${appId}, Version ${appVersion}`);
+  console.log(`✅ New version added: Version ${appVersion}`);
   console.log('');
 
-  // Step 4: Permit the PKP to use the app version
-  console.log('🔑 Step 4: Permitting PKP to use app version...');
+  // Step 6: Permit the PKP to use the new app version
+  console.log('🔑 Step 6: Permitting PKP to use new app version...');
 
-  // Define permission data (no policy restrictions)
   const permissionData: PermissionData = {
     [abilityIpfsCid]: {
       // No policies configured - ability will run without policy restrictions
@@ -146,7 +143,7 @@ async function main() {
     appVersion,
     agentPkpInfo: pkpInfo,
   });
-  console.log('✅ PKP permitted to use app version');
+  console.log('✅ PKP permitted to use new app version');
   console.log('');
 
   // Save setup details to file
@@ -170,24 +167,26 @@ async function main() {
   console.log(`   File: ${setupFilePath}`);
   console.log('');
 
-  // Show next steps
+  // Show summary
+  console.log('📋 ===== SUMMARY =====');
+  console.log('');
+  console.log(`✅ Added ability version ${appVersion} to app ${appId}`);
+  console.log(`   Ability IPFS CID: ${abilityIpfsCid}`);
+  console.log(`   PKP Address: ${pkpInfo.ethAddress}`);
+  console.log('');
   console.log('📋 ===== NEXT STEPS =====');
   console.log('');
-  console.log('1. 🎯 Transfer your LP NFT to the PKP:');
-  console.log(`   LP NFT should be transferred to: ${pkpInfo.ethAddress}`);
+  console.log('1. 🚀 Test the new ability version:');
+  console.log('   DEPLOYED_ABILITY_IPFS_CID=' + abilityIpfsCid + ' pnpm execute-ability-with-pkp');
   console.log('');
-  console.log('2. 🚀 Run the execution script:');
-  console.log('   pnpm execute-ability-with-pkp');
-  console.log('');
-  console.log('3. 📄 Setup details are saved in:');
-  console.log(`   ${setupFilePath}`);
-  console.log('');
-  console.log('✅ Setup complete! Your PKP is ready with full Vincent permissions.');
+  console.log('2. ⚠️  If you hit rate limits:');
+  console.log('   - Set up capacity credits: pnpm setup-capacity-credits');
+  console.log('   - Then run execution again');
   console.log('');
 }
 
 main().catch((error) => {
-  console.error('\n❌ Setup failed:');
+  console.error('\n❌ Failed to add ability version:');
   console.error(error);
   process.exit(1);
 });

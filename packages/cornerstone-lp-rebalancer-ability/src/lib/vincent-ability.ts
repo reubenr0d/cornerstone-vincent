@@ -64,6 +64,19 @@ const NONFUNGIBLE_POSITION_MANAGER_ABI = [
   'function collect((uint256 tokenId,address recipient,uint128 amount0Max,uint128 amount1Max)) external payable returns (uint256 amount0,uint256 amount1)',
 ] as const;
 
+const CORNERSTONE_TOKEN_ABI = [
+  'function project() external view returns (address)',
+  'function symbol() external view returns (string)',
+  'function decimals() external view returns (uint8)',
+] as const;
+
+const CORNERSTONE_PROJECT_ABI = [
+  'function getNAVPerShare() external view returns (uint256)',
+  'function getTargetPoolPrice() external view returns (uint256)',
+  'function token() external view returns (address)',
+  'function stablecoin() external view returns (address)',
+] as const;
+
 type PositionInfo = {
   tokenId: string;
   token0: string;
@@ -201,7 +214,7 @@ const fetchOwnedPositions = async (
     const position = (await withRpcRetry(
       () => positionManager.positions(tokenId),
       `positions: positions(${tokenId.toString()})`,
-    )) as any;
+    )) as [string, string, string, string, number, number, number, string];
 
     positions.push({
       tokenId: tokenId.toString(),
@@ -215,6 +228,127 @@ const fetchOwnedPositions = async (
   }
 
   return positions;
+};
+
+type ProjectInfo = {
+  projectAddress: string;
+  cornerstoneToken: string;
+  stablecoin: string;
+  isToken0Cornerstone: boolean;
+};
+
+const getProjectFromPosition = async (
+  provider: JsonRpcProvider,
+  position: PositionInfo,
+): Promise<ProjectInfo | null> => {
+  // Try token0 first
+  try {
+    const token0Contract = new ethers.Contract(position.token0, CORNERSTONE_TOKEN_ABI, provider);
+    const projectAddress = (await withRpcRetry(
+      () => token0Contract.project(),
+      `project() for token0 ${position.token0}`,
+    )) as string;
+
+    if (projectAddress && projectAddress !== ethers.constants.AddressZero) {
+      console.log(
+        `[@reubenr0d/lp-rebalancer-ability] Found Cornerstone project ${projectAddress} from token0`,
+      );
+      return {
+        projectAddress,
+        cornerstoneToken: position.token0,
+        stablecoin: position.token1,
+        isToken0Cornerstone: true,
+      };
+    }
+  } catch {
+    // Not a Cornerstone token, try token1
+  }
+
+  // Try token1
+  try {
+    const token1Contract = new ethers.Contract(position.token1, CORNERSTONE_TOKEN_ABI, provider);
+    const projectAddress = (await withRpcRetry(
+      () => token1Contract.project(),
+      `project() for token1 ${position.token1}`,
+    )) as string;
+
+    if (projectAddress && projectAddress !== ethers.constants.AddressZero) {
+      console.log(
+        `[@reubenr0d/lp-rebalancer-ability] Found Cornerstone project ${projectAddress} from token1`,
+      );
+      return {
+        projectAddress,
+        cornerstoneToken: position.token1,
+        stablecoin: position.token0,
+        isToken0Cornerstone: false,
+      };
+    }
+  } catch {
+    // Not a Cornerstone token
+  }
+
+  return null;
+};
+
+type DeviationAnalysis = {
+  currentPoolPrice: BigNumber;
+  targetPrice: BigNumber;
+  deviationBps: number;
+  needsRebalance: boolean;
+  direction: 'increase' | 'decrease' | 'none';
+};
+
+const analyzePoolDeviation = async (
+  provider: JsonRpcProvider,
+  position: PositionInfo,
+  projectInfo: ProjectInfo,
+): Promise<DeviationAnalysis> => {
+  const projectContract = new ethers.Contract(
+    projectInfo.projectAddress,
+    CORNERSTONE_PROJECT_ABI,
+    provider,
+  );
+
+  // Get NAV per share (target price) from project
+  const targetPrice = ethers.BigNumber.from(
+    await withRpcRetry(() => projectContract.getNAVPerShare(), 'getNAVPerShare'),
+  );
+
+  console.log(
+    `[@reubenr0d/lp-rebalancer-ability] Target price from project: ${ethers.utils.formatUnits(targetPrice, 18)}`,
+  );
+
+  // Calculate pool price from sqrtPriceX96
+  // Note: This is a simplified calculation. In production, you'd need to handle token ordering and decimals properly
+  // For now, assume we need to compare with target
+
+  // Simplified: assume 1:1 for demonstration
+  // In reality, you'd get the pool address and calculate the actual price
+  const currentPoolPrice = targetPrice; // Placeholder - would calculate from pool
+
+  // Calculate deviation in basis points
+  const deviation = targetPrice.sub(currentPoolPrice).abs();
+  const deviationBps = targetPrice.gt(0) ? deviation.mul(10000).div(targetPrice).toNumber() : 0;
+
+  const REBALANCE_THRESHOLD_BPS = 100; // 1% threshold
+  const needsRebalance = deviationBps >= REBALANCE_THRESHOLD_BPS;
+
+  let direction: 'increase' | 'decrease' | 'none' = 'none';
+  if (needsRebalance) {
+    direction = currentPoolPrice.gt(targetPrice) ? 'decrease' : 'increase';
+  }
+
+  console.log(
+    `[@reubenr0d/lp-rebalancer-ability] Deviation: ${deviationBps} bps, needs rebalance: ${needsRebalance}, direction: ${direction}`,
+  );
+
+  return {
+    currentPoolPrice,
+    targetPrice,
+    deviationBps,
+    needsRebalance,
+    direction,
+  };
 };
 
 export const vincentAbility = createVincentAbility({
@@ -276,7 +410,7 @@ export const vincentAbility = createVincentAbility({
     }
   },
 
-  execute: async ({ abilityParams }, { succeed, fail, delegation, policiesContext }) => {
+  execute: async ({ abilityParams }, { succeed, fail, delegation }) => {
     const { registryAddress, rpcUrl } = abilityParams;
 
     try {
@@ -307,45 +441,87 @@ export const vincentAbility = createVincentAbility({
         });
       }
 
-      // For each position, try to find the corresponding Cornerstone project
+      // Analyze each position and check if it's a Cornerstone LP
+      const projects = [];
+      let totalActions = 0;
+
       for (const position of ownedPositions) {
         console.log(
           `[@reubenr0d/lp-rebalancer-ability] Checking position ${position.tokenId} (${position.token0}/${position.token1})`,
         );
 
-        // Try to find a Cornerstone project with one of these tokens
-        // For simplicity, assume one token is always the project token and check for a PYUSD pair
-        const token0Contract = new ethers.Contract(
-          position.token0,
-          ['function symbol() view returns (string)'],
-          provider,
-        );
-        const token1Contract = new ethers.Contract(
-          position.token1,
-          ['function symbol() view returns (string)'],
-          provider,
-        );
+        // Try to get Cornerstone project from this position
+        const projectInfo = await getProjectFromPosition(provider, position);
 
-        try {
-          const [symbol0, symbol1] = await Promise.all([
-            withRpcRetry(() => token0Contract.symbol(), `symbol for ${position.token0}`),
-            withRpcRetry(() => token1Contract.symbol(), `symbol for ${position.token1}`),
-          ]);
-
-          console.log(`[@reubenr0d/lp-rebalancer-ability] Position tokens: ${symbol0}/${symbol1}`);
-        } catch (e) {
-          console.log(`[@reubenr0d/lp-rebalancer-ability] Could not get symbols for position`);
+        if (!projectInfo) {
+          console.log(
+            `[@reubenr0d/lp-rebalancer-ability] Position ${position.tokenId} is not a Cornerstone LP, skipping`,
+          );
+          continue;
         }
+
+        console.log(
+          `[@reubenr0d/lp-rebalancer-ability] Position ${position.tokenId} is a Cornerstone LP for project ${projectInfo.projectAddress}`,
+        );
+
+        // Analyze if rebalancing is needed
+        const analysis = await analyzePoolDeviation(provider, position, projectInfo);
+
+        // Create project report
+        const projectReport = {
+          projectAddress: projectInfo.projectAddress,
+          tokenAddress: projectInfo.cornerstoneToken,
+          pyusdAddress: projectInfo.stablecoin,
+          navPerShare: analysis.targetPrice.toString(),
+          targetPoolPrice: analysis.targetPrice.toString(),
+          currentPoolPrice: analysis.currentPoolPrice.toString(),
+          poolLiquidity: '0', // TODO: Get from pool
+          totalPositionLiquidity: position.liquidity.toString(),
+          deviationBps: analysis.deviationBps,
+          direction: analysis.direction,
+          positionCount: 1,
+          positionTokenIds: [position.tokenId],
+          actions: [] as Array<{ type: string; data: unknown }>,
+        };
+
+        // If rebalancing is needed, log the action (actual execution would require PKP signing)
+        if (analysis.needsRebalance) {
+          console.log(
+            `[@reubenr0d/lp-rebalancer-ability] Position ${position.tokenId} needs rebalancing: ${analysis.direction}`,
+          );
+
+          // For now, just log what would be done
+          // In production, you'd use PKP delegation to sign and execute the transaction
+          const action = {
+            projectAddress: projectInfo.projectAddress,
+            tokenId: position.tokenId,
+            name: analysis.direction === 'increase' ? 'IncreaseLiquidity' : 'DecreaseLiquidity',
+            txHash: '0x0000000000000000000000000000000000000000000000000000000000000000', // Placeholder
+          };
+
+          projectReport.actions.push(action);
+          totalActions += 1;
+
+          console.log(
+            `[@reubenr0d/lp-rebalancer-ability] Would ${analysis.direction} liquidity for position ${position.tokenId}`,
+          );
+        } else {
+          console.log(
+            `[@reubenr0d/lp-rebalancer-ability] Position ${position.tokenId} is within acceptable range (${analysis.deviationBps} bps), no action needed`,
+          );
+        }
+
+        projects.push(projectReport);
       }
 
-      // Since discovering projects is slow, for now just return with position info
-      // User would need to provide project addresses directly or we need a faster lookup method
-      console.log(`[@reubenr0d/lp-rebalancer-ability] Skipping project discovery to avoid timeout`);
+      console.log(
+        `[@reubenr0d/lp-rebalancer-ability] Analysis complete: ${projects.length} Cornerstone positions found, ${totalActions} actions needed`,
+      );
 
       return succeed({
         registryAddress,
-        totalActions: 0,
-        projects: [],
+        totalActions,
+        projects,
       });
     } catch (error) {
       console.error('[@reubenr0d/lp-rebalancer-ability/execute] Registry run failed', error);

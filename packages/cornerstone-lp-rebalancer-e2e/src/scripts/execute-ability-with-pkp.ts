@@ -101,6 +101,20 @@ async function main() {
     ethersSigner: delegateeWallet,
   });
 
+  // Try to load capacity delegation auth sig
+  const capacityAuthSigPath = join(process.cwd(), 'capacity-delegation-auth-sig.json');
+  let capacityDelegationAuthSig;
+
+  if (existsSync(capacityAuthSigPath)) {
+    capacityDelegationAuthSig = JSON.parse(readFileSync(capacityAuthSigPath, 'utf8'));
+    console.log('✅ Using capacity delegation auth sig to bypass rate limits');
+    console.log('');
+  } else {
+    console.log('⚠️  No capacity delegation auth sig found');
+    console.log('   If you hit rate limits, run: pnpm setup-capacity-credits');
+    console.log('');
+  }
+
   console.log('⚡ Executing LP Rebalancer ability...\n');
 
   try {
@@ -114,6 +128,7 @@ async function main() {
       },
       {
         delegatorPkpEthAddress: pkpDetails.ethAddress,
+        ...(capacityDelegationAuthSig && { capacityDelegationAuthSig }),
       },
     );
 

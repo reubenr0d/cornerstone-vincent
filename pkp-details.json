@@ -1,11 +1,11 @@
 {
   "ethAddress": "0xaB0D5922AEB47d6E028E46a66752F054d639bAeb",
   "tokenId": "109013493400997875669076524913886707440794405726417064608244294394864993874667",
-  "delegateeWallet": "0x846Aec0c62F866BB682f7e4d419F869240C6aBa5",
+  "delegateeWallet": "0x43115E9C858825a5812FEC05cD6195D018d49893",
   "registryAddress": "0x832d9D61E076791Ae7c625C27Ab1Ca4D7499f6cb",
   "rpcUrl": "https://sepolia.infura.io/v3/8cd7c812dfe546888949c99de3b9a4c9",
-  "abilityIpfsCid": "QmcSMxbPv13RxP23FtQbpwLfvBHDcBFbfH46HDkaHDdfET",
-  "setupDate": "2025-10-24T18:36:54.371Z",
+  "abilityIpfsCid": "QmW2piwDaAY7bky94zufG11hZ5jZLJTwWjPwR74Vv2Cs6p",
+  "setupDate": "2025-10-24T19:17:00.000Z",
   "appId": 50705347811,
   "appVersion": 19
 }
