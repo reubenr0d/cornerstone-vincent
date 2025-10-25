@@ -1,0 +1,77 @@
+name: Execute Ability with PKP (Hourly)
+
+on:
+  schedule:
+    # Runs every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  execute-ability:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.4'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.7.0
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Verify required files
+        run: |
+          if [ ! -f "pkp-details.json" ]; then
+            echo "❌ Error: pkp-details.json not found!"
+            echo "Please run 'pnpm setup-pkp-and-permissions' first and commit the pkp-details.json file."
+            exit 1
+          fi
+          echo "✅ Required files verified"
+
+      - name: Execute ability with PKP
+        env:
+          # Using GitHub Secret (recommended for security)
+          # To use this, add TEST_APP_DELEGATEE_PRIVATE_KEY to your repository secrets
+          TEST_APP_DELEGATEE_PRIVATE_KEY: ${{ secrets.TEST_APP_DELEGATEE_PRIVATE_KEY }}
+
+          # Alternative: Hardcoded value (NOT RECOMMENDED for production)
+          # Uncomment the line below and comment out the line above if you want to hardcode
+          # TEST_APP_DELEGATEE_PRIVATE_KEY: '0xf3837f453052a1b7710ed7d021ec1fdeb583dffa5afe9f06bdb00369caa2226a'
+
+          # Optional: Use a specific deployed ability IPFS CID
+          # DEPLOYED_ABILITY_IPFS_CID: ${{ secrets.DEPLOYED_ABILITY_IPFS_CID }}
+        run: pnpm execute-ability-with-pkp
+
+      - name: Upload execution logs (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-logs-${{ github.run_number }}
+          path: |
+            *.log
+            logs/
+          if-no-files-found: ignore
